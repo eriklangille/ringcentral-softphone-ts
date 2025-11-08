@@ -247,13 +247,6 @@ ieee754@^1.2.1:
   resolved "https://registry.yarnpkg.com/ieee754/-/ieee754-1.2.1.tgz#8eb7a10a63fff25d15a57b001586d177d1b0d352"
   integrity sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==
 
-mixpanel@^0.18.1:
-  version "0.18.1"
-  resolved "https://registry.yarnpkg.com/mixpanel/-/mixpanel-0.18.1.tgz#beefdce6c260165f4e2059c8cdd34c5c557162f7"
-  integrity sha512-YD1xfn6WP6ZLQ6Pmgh0KgdXhueJEsrodThMTsHzHMH0VbWa9ck8s+ynDtM83OSgt+yQ61W/SQNrH8Y4wIwocGg==
-  dependencies:
-    https-proxy-agent "5.0.0"
-
 mp4box@^0.5.3:
   version "0.5.4"
   resolved "https://registry.yarnpkg.com/mp4box/-/mp4box-0.5.4.tgz#f09d85482e9215927e6a617e4894c742f3f019f7"

@@ -2,7 +2,6 @@ import EventEmitter from "node:events";
 import tls, { TLSSocket } from "node:tls";
 
 import waitFor from "wait-for-async";
-import Mixpanel from "mixpanel";
 
 import InboundCallSession from "./call-session/inbound.js";
 import OutboundCallSession from "./call-session/outbound.js";
@@ -22,8 +21,6 @@ import {
 import { SoftPhoneOptions } from "./types.js";
 import Codec from "./codec.js";
 
-const mp = Mixpanel.init("0a22181a3a5f16b7938e5d3277b7f96a");
-
 class Softphone extends EventEmitter {
   public sipInfo: SoftPhoneOptions;
   public client: TLSSocket;
@@ -36,10 +33,6 @@ class Softphone extends EventEmitter {
   private connected = false;
 
   public constructor(sipInfo: SoftPhoneOptions) {
-    mp.track("init", {
-      distinct_id: sipInfo.username,
-      version: "1.1.11",
-    });
     super();
     if (sipInfo.codec === undefined) {
       sipInfo.codec = "OPUS/16000";
@@ -61,7 +54,7 @@ class Softphone extends EventEmitter {
       },
       () => {
         this.connected = true;
-      },
+      }
     );
 
     let cache = "";
@@ -105,19 +98,18 @@ class Softphone extends EventEmitter {
       const requestMessage = new RequestMessage(
         `REGISTER sip:${this.sipInfo.domain} SIP/2.0`,
         {
-          Via:
-            `SIP/2.0/TLS ${this.client.localAddress}:${this.client.localPort};rport;branch=${branch()};alias`,
+          Via: `SIP/2.0/TLS ${this.client.localAddress}:${
+            this.client.localPort
+          };rport;branch=${branch()};alias`,
           "Max-Forwards": "70",
-          From:
-            `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>;tag=${fromTag}`,
+          From: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>;tag=${fromTag}`,
           To: `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>`,
           "Call-ID": this.registerCallId,
-          Contact:
-            `<sip:${this.sipInfo.username}@${this.client.localAddress}:${this.client.localPort};transport=TLS;ob>;reg-id=1;+sip.instance="<urn:uuid:${this.instanceId}>"`,
+          Contact: `<sip:${this.sipInfo.username}@${this.client.localAddress}:${this.client.localPort};transport=TLS;ob>;reg-id=1;+sip.instance="<urn:uuid:${this.instanceId}>"`,
           Expires: 3600,
           Allow:
             "PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS",
-        },
+        }
       );
       const inboundMessage = await this.send(requestMessage, true);
       if (inboundMessage.subject.startsWith("SIP/2.0 200 ")) {
@@ -130,7 +122,7 @@ class Softphone extends EventEmitter {
       newMessage.headers.Authorization = generateAuthorization(
         this.sipInfo,
         nonce,
-        "REGISTER",
+        "REGISTER"
       );
       const message = await this.send(newMessage, true);
       if (!message.subject.startsWith("SIP/2.0 200 ")) {
@@ -142,7 +134,7 @@ class Softphone extends EventEmitter {
       () => {
         sipRegister();
       },
-      30 * 1000, // refresh registration every 30 seconds
+      30 * 1000 // refresh registration every 30 seconds
     );
     this.on("message", (inboundMessage) => {
       if (!inboundMessage.subject.startsWith("INVITE sip:")) {
@@ -162,10 +154,8 @@ class Softphone extends EventEmitter {
   }
 
   public enableDebugMode() {
-    this.on(
-      "message",
-      (message) =>
-        console.log(`Receiving...(${new Date()})\n` + message.toString()),
+    this.on("message", (message) =>
+      console.log(`Receiving...(${new Date()})\n` + message.toString())
     );
     const tlsWrite = this.client.write.bind(this.client);
     this.client.write = (message) => {
@@ -183,11 +173,11 @@ class Softphone extends EventEmitter {
 
   public send(
     message: OutboundMessage,
-    waitForReply?: true,
+    waitForReply?: true
   ): Promise<InboundMessage>;
   public send(
     message: OutboundMessage,
-    waitForReply?: false,
+    waitForReply?: false
   ): Promise<undefined>;
   public send(message: OutboundMessage, waitForReply = false) {
     this.client.write(message.toString());
@@ -240,24 +230,24 @@ a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:${localKey}
     const inviteMessage = new RequestMessage(
       `INVITE sip:${callee}@${this.sipInfo.domain} SIP/2.0`,
       {
-        Via:
-          `SIP/2.0/TLS ${this.client.localAddress}:${this.client.localPort};rport;branch=${branch()};alias`,
+        Via: `SIP/2.0/TLS ${this.client.localAddress}:${
+          this.client.localPort
+        };rport;branch=${branch()};alias`,
         "Max-Forwards": 70,
-        From:
-          `<sip:${this.sipInfo.username}@${this.sipInfo.domain}>;tag=${uuid()}`,
+        From: `<sip:${this.sipInfo.username}@${
+          this.sipInfo.domain
+        }>;tag=${uuid()}`,
         To: `<sip:${callee}@sip.ringcentral.com>`,
-        Contact:
-          ` <sip:${this.sipInfo.username}@${this.client.localAddress}:${this.client.localPort};transport=TLS;ob>`,
+        Contact: ` <sip:${this.sipInfo.username}@${this.client.localAddress}:${this.client.localPort};transport=TLS;ob>`,
         "Call-ID": uuid(),
         Route: `<sip:${this.sipInfo.outboundProxy};transport=tls;lr>`,
-        Allow:
-          `PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS`,
+        Allow: `PRACK, INVITE, ACK, BYE, CANCEL, UPDATE, INFO, SUBSCRIBE, NOTIFY, REFER, MESSAGE, OPTIONS`,
         Supported: `replaces, 100rel, timer, norefersub`,
         "Session-Expires": 1800,
         "Min-SE": 90,
         "Content-Type": "application/sdp",
       },
-      offerSDP,
+      offerSDP
     );
     const inboundMessage = await this.send(inviteMessage, true);
     const proxyAuthenticate = inboundMessage.getHeader("Proxy-Authenticate")!;
@@ -266,7 +256,7 @@ a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:${localKey}
     newMessage.headers["Proxy-Authorization"] = generateAuthorization(
       this.sipInfo,
       nonce,
-      "INVITE",
+      "INVITE"
     );
     const progressMessage = await this.send(newMessage, true);
     const outboundCallSession = new OutboundCallSession(this, progressMessage);
